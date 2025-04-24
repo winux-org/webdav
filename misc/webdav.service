@@ -1,0 +1,15 @@
+[Unit]
+Description = WebDAV Server
+After=network.target
+
+[Service]
+User = root
+Group = root
+Type = simple
+ExecStart = /srv/bin/webdav
+#Restart = on-abort
+Restart=on-failure
+RestartSec = 5
+
+[Install]
+WantedBy = multi-user.target

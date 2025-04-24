@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>File List</title>
+</head>
+<body>
+    {{if .IsLoggedIn}}
+        <p>Welcome back!</p>
+    {{else}}
+        <p>Please log in to access more features.</p>
+    {{end}}
+
+    <h2>Files</h2>
+    {{if .Files}}
+        <ul>
+        {{range .Files}}
+            <li>{{.FileName}}</li>
+        {{end}}
+        </ul>
+    {{else}}
+        <p>No files available.</p>
+    {{end}}
+</body>
+</html>
