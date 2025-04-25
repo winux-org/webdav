@@ -11,13 +11,26 @@
         <p>Please log in to access more features.</p>
     {{end}}
 
-    <h2>Files</h2>
-    {{if .Files}}
-        <ul>
+    <h2>Files at: {{$.Path}}</h2>
+{{if .Files}}
+    <table border="1" cellpadding="5" cellspacing="0">
+        <tr>
+            <th>Name</th>
+            <th>Modified</th>
+            <th>Size</th>
+            <th>Kind</th>
+        </tr>
         {{range .Files}}
-            <li>{{.FileName}}</li>
+        <tr>
+            <td>
+                <a href="{{$.Path}}/{{.FileName}}">{{.FileName}}</a>
+            </td>
+            <td>{{.ModTime}}</td>
+            <td>{{.Size}}</td>
+            <td>{{.Kind}}</td>
+        </tr>
         {{end}}
-        </ul>
+    </table>
     {{else}}
         <p>No files available.</p>
     {{end}}

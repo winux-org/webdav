@@ -16,11 +16,20 @@ import (
 	"golang.org/x/net/webdav"
 )
 
+func GetDefaultPath() string {
+	drivePath := os.Getenv("TEST_DRIVE_PATH")
+	if drivePath == "" {
+		drivePath = "."
+	}
+	return drivePath
+}
+
 // WebDAV handler with authentication
 func webdavHandler(w http.ResponseWriter, r *http.Request) {
 	if runtime.GOOS != "linux" {
+		drivePath := GetDefaultPath()
 		handler := &webdav.Handler{
-			FileSystem: webdav.Dir("."),
+			FileSystem: webdav.Dir(drivePath),
 			LockSystem: webdav.NewMemLS(),
 		}
 		handler.ServeHTTP(w, r)

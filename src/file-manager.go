@@ -1,47 +1,71 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
+	//"strings"
 	"html/template"
 	"os"
 	"encoding/json"
+	"path/filepath"
 )
+
 var templates = template.Must(template.ParseGlob("templates/*.html"))
 
-// curl -H "Accept: application/json" http://localhost:9988/
 func getRoot(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got / request\n")
-	//io.WriteString(w, "This is my website!\n")
+	// Read optional path parameter
+	//subPath := r.URL.Query().Get("path")
+	//requestedPath := strings.TrimPrefix(r.URL.Path, "/file/")
+	requestedPath := r.URL.Path
+	basePath := GetDefaultPath()
+
+	fullPath := filepath.Join(basePath, requestedPath)
+
+
+	info, err := os.Stat(fullPath)
+	if err != nil {
+		fmt.Println(err)
+		http.NotFound(w, r)
+		return
+	}
+	if info.IsDir() {
+
+	} else {
+		http.ServeFile(w, r, fullPath)
+		return
+	}
 	
-	c := ListFiles("")
-	fmt.Println(c)
+
+	fmt.Println("F: ", requestedPath)
+	fmt.Println("A: ", basePath)
+	fmt.Println("FP: ", fullPath)
+	fmt.Println("FP: ", info)
+
+	c := ListFiles(fullPath)
 
 	context := struct {
-		IsLoggedIn bool ; Files []struct {FileName string}}{
+		IsLoggedIn bool
+		Files      []FSNode
+		Path       string
+	}{
 		IsLoggedIn: false,
-		Files: c,
+		Files:      c,
+		Path:       requestedPath,
 	}
 
-	// Check if request wants JSON
 	if r.Header.Get("Accept") == "application/json" {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(context)
 		return
 	}
 
-
-	//tmpl, _ := templates.ParseFiles("templates/venue.html")
-
 	templates.ExecuteTemplate(w, "index.html", context)
 }
 
-func ListFiles(dir string) []struct {FileName string} {
-	context := []struct {FileName string} {}
+func ListFiles(dir string) []FSNode {
+	context := []FSNode {}
 	
-	entries, err := os.ReadDir(".")
+	entries, err := os.ReadDir(dir)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return context
@@ -53,9 +77,21 @@ func ListFiles(dir string) []struct {FileName string} {
 			fmt.Println("Error getting info:", err)
 			continue
 		}
-		
-		context = append(context, struct {FileName string}{
-			FileName: info.Name(),
+		kind := "Folder"
+		if !entry.IsDir() {
+			ext := filepath.Ext(entry.Name())
+			if ext != "" {
+				kind = ext[1:] + " File" // e.g. "txt File"
+			} else {
+				kind = "Unknown File"
+			}
+		}
+		context = append(context, FSNode{
+			FileName: entry.Name(),
+			IsDir:    entry.IsDir(),
+			ModTime:  info.ModTime().Format("Jan 02, 2006 15:04"),
+			Size:     fmt.Sprintf("%d KB", info.Size()/1024),
+			Kind:     kind,
 		})
 
 		//fmt.Printf("Name: %s, Size: %d bytes, IsDir: %t\n", info.Name(), info.Size(), info.IsDir())
@@ -64,30 +100,7 @@ func ListFiles(dir string) []struct {FileName string} {
 	return context
 }
 
-func getHello(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got /hello request\n")
-	io.WriteString(w, "Hello, HTTP!\n")
-}
-
 func GetMenusHandler(w http.ResponseWriter, r *http.Request) {
 	//fmt.Fprintf(w, "Hello, World!")
 	templates.ExecuteTemplate(w, "index.html", nil)
 }
-
-func HTTPmain() {
-
-	
-
-	http.HandleFunc("/", getRoot)
-	http.HandleFunc("/hello", getHello)
-
-	err := http.ListenAndServe(":3333", nil)
-
-	if errors.Is(err, http.ErrServerClosed) {
-		fmt.Printf("server closed\n")
-	} else if err != nil {
-		fmt.Printf("error starting server: %s\n", err)
-		os.Exit(1)
-	}
-}
-
